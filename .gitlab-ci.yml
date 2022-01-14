@@ -1,0 +1,20 @@
+include:
+  - project: 'CICD/NpmGitlabCI'
+    ref: master
+    file: 'NpmPublishFile.yml'
+variables: 
+  #这里改成 package.json 的相对路径
+  CURPATH: Assets/com.alelievr.NodeGraphProcessor/
+stages:
+  - initial
+  - login
+  - publish
+initial:
+  stage: initial
+  extends: .initial
+login:
+  stage: login
+  extends: .login
+publish:
+  stage: publish
+  extends: .publish
