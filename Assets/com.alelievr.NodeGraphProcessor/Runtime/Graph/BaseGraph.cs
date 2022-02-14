@@ -832,7 +832,7 @@ namespace GraphProcessor
 				return false;
 
 			if (TypeAdapter.AreIncompatible(t1, t2))
-				return false;
+				return true;
 
 			//Check if there is custom adapters for this assignation
 			if (CustomPortIO.IsAssignable(t1, t2))

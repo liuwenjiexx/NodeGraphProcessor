@@ -126,7 +126,7 @@ namespace GraphProcessor
             if (!adaptersLoaded)
                 LoadAllAdapters();
             
-            if (AreIncompatible(from, to))
+            if (!AreIncompatible(from, to))
                 return false;
 
             return adapters.ContainsKey((from, to));
