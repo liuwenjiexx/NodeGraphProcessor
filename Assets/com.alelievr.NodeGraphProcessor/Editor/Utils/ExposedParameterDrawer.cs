@@ -200,8 +200,26 @@ namespace GraphProcessor
                 settingsProperty.serializedObject.ApplyModifiedProperties();
                 graph.NotifyExposedParameterChanged(param);
             });
+            VisualElement container = new VisualElement(); 
+            container.Add(p);
 
-            return p;
+
+            var isInput = settingsProperty.FindPropertyRelative(nameof(ExposedParameter.Settings.isInput));
+            p = new PropertyField(isInput, "Input");
+            p.RegisterValueChangeCallback(e => {
+                settingsProperty.serializedObject.ApplyModifiedProperties();
+                graph.NotifyExposedParameterChanged(param);
+            });
+            container.Add(p);
+
+            var isOutput = settingsProperty.FindPropertyRelative(nameof(ExposedParameter.Settings.isOutput));
+            p = new PropertyField(isOutput, "Output");
+            p.RegisterValueChangeCallback(e => {
+                settingsProperty.serializedObject.ApplyModifiedProperties();
+                graph.NotifyExposedParameterChanged(param);
+            });
+            container.Add(p);
+            return container;
         }
 
         protected static BaseGraph GetGraph(SerializedProperty property) => property.serializedObject.FindProperty("graph").objectReferenceValue as BaseGraph;

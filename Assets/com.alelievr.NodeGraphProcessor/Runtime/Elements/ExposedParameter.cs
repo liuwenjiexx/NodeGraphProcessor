@@ -12,6 +12,8 @@ namespace GraphProcessor
         {
             public bool isHidden = false;
             public bool expanded = false;
+            public bool isInput = true;
+            public bool isOutput = false;
 
             [SerializeField]
             internal string guid = null;

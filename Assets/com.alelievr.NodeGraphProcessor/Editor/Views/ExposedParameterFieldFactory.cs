@@ -38,6 +38,8 @@ namespace GraphProcessor
 
         public void UpdateSerializedProperties(List<ExposedParameter> parameters = null)
         {
+            if (graph == null)
+                return;
             if (parameters != null)
                 exposedParameterObject.parameters = parameters;
             else

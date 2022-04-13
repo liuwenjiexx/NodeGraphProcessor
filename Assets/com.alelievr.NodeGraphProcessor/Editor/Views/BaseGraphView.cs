@@ -606,7 +606,7 @@ namespace GraphProcessor
 			return selectedNodesNotInInspector.Any() || nodeInInspectorWithoutSelectedNodes.Any();
 		}
 
-		void DragPerformedCallback(DragPerformEvent e)
+	   protected virtual void DragPerformedCallback(DragPerformEvent e)
 		{
 			var mousePos = (e.currentTarget as VisualElement).ChangeCoordinatesTo(contentViewContainer, e.localMousePosition);
 			var dragData = DragAndDrop.GetGenericData("DragSelection") as List< ISelectable >;
