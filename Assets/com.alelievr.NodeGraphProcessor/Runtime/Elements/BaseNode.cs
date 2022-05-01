@@ -151,6 +151,7 @@ namespace GraphProcessor
 			public string						tooltip;
 			public CustomPortBehaviorDelegate	behavior;
 			public bool							vertical;
+			public bool? isFlow;
 
 			public NodeFieldInformation(FieldInfo info, string name, bool input, bool isMultiple, string tooltip, bool vertical, CustomPortBehaviorDelegate behavior)
 			{

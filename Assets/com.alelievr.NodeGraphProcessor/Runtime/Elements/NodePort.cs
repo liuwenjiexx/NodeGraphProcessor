@@ -44,6 +44,8 @@ namespace GraphProcessor
 		/// </summary>
 		public bool		vertical;
 
+		public bool? isFlow;
+
         public bool Equals(PortData other)
         {
 			return identifier == other.identifier
@@ -171,6 +173,9 @@ namespace GraphProcessor
 				//Creation of the delegate to move the data from the input node to the output node:
 				FieldInfo inputField = edge.inputNode.GetType().GetField(edge.inputFieldName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
 				FieldInfo outputField = edge.outputNode.GetType().GetField(edge.outputFieldName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+#if UNITY_EDITOR
+				FieldInfo passThroughBufferField = typeof(SerializableEdge).GetField(nameof(edge.passThroughBuffer), BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+#endif
 				Type inType, outType;
 
 #if DEBUG_LAMBDA
@@ -189,6 +194,9 @@ namespace GraphProcessor
 					}
 
 					inputField.SetValue(edge.inputNode, convertedValue);
+#if UNITY_EDITOR
+					passThroughBufferField.SetValue(edge, convertedValue);
+#endif
 				});
 #endif
 
@@ -203,6 +211,7 @@ namespace GraphProcessor
 
 				Expression inputParamField = Expression.Field(Expression.Constant(edge.inputNode), inputField);
 				Expression outputParamField = Expression.Field(Expression.Constant(edge.outputNode), outputField);
+				Expression passThroughBufferParamField = Expression.Field(Expression.Constant(edge), passThroughBufferField);
 
 				inType = edge.inputPort.portData.displayType ?? inputField.FieldType;
 				outType = edge.outputPort.portData.displayType ?? outputField.FieldType;
@@ -221,8 +230,14 @@ namespace GraphProcessor
 					outputParamField = Expression.Convert(outputParamField, inputField.FieldType);
 
 				BinaryExpression assign = Expression.Assign(inputParamField, outputParamField);
-				return Expression.Lambda< PushDataDelegate >(assign).Compile();
-			} catch (Exception e) {
+				Expression expr=assign;
+#if UNITY_EDITOR
+				BinaryExpression assignPassThroughBuffer = Expression.Assign(passThroughBufferParamField, outputParamField);
+				expr = Expression.Block(expr, assignPassThroughBuffer);
+#endif
+				return Expression.Lambda<PushDataDelegate>(expr).Compile();
+			}
+			catch (Exception e) {
 				Debug.LogError(e);
 				return null;
 			}

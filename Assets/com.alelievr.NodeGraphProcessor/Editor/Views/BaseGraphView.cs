@@ -597,7 +597,7 @@ namespace GraphProcessor
 				UpdateNodeInspectorSelection();
 		}
 
-		bool DoesSelectionContainsInspectorNodes()
+		protected virtual	bool DoesSelectionContainsInspectorNodes()
 		{
 			var selectedNodes = selection.Where(s => s is BaseNodeView).ToList();
 			var selectedNodesNotInInspector = selectedNodes.Except(nodeInspector.selectedNodes).ToList();
@@ -912,7 +912,7 @@ namespace GraphProcessor
 
 		#region Graph content modification
 
-		public void UpdateNodeInspectorSelection()
+		public virtual void UpdateNodeInspectorSelection()
 		{
 			if (nodeInspector.previouslySelectedObject != Selection.activeObject)
 				nodeInspector.previouslySelectedObject = Selection.activeObject;
