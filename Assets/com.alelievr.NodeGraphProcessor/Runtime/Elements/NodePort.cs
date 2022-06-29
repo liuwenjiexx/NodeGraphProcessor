@@ -211,8 +211,9 @@ namespace GraphProcessor
 
 				Expression inputParamField = Expression.Field(Expression.Constant(edge.inputNode), inputField);
 				Expression outputParamField = Expression.Field(Expression.Constant(edge.outputNode), outputField);
+#if UNITY_EDITOR
 				Expression passThroughBufferParamField = Expression.Field(Expression.Constant(edge), passThroughBufferField);
-
+#endif
 				inType = edge.inputPort.portData.displayType ?? inputField.FieldType;
 				outType = edge.outputPort.portData.displayType ?? outputField.FieldType;
 
@@ -232,7 +233,7 @@ namespace GraphProcessor
 				BinaryExpression assign = Expression.Assign(inputParamField, outputParamField);
 				Expression expr=assign;
 #if UNITY_EDITOR
-				BinaryExpression assignPassThroughBuffer = Expression.Assign(passThroughBufferParamField, outputParamField);
+				BinaryExpression assignPassThroughBuffer = Expression.Assign(passThroughBufferParamField, Expression.Convert(outputParamField, passThroughBufferField.FieldType));
 				expr = Expression.Block(expr, assignPassThroughBuffer);
 #endif
 				return Expression.Lambda<PushDataDelegate>(expr).Compile();
