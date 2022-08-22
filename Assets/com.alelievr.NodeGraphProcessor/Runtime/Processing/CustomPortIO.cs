@@ -6,50 +6,62 @@ using System.Linq.Expressions;
 
 namespace GraphProcessor
 {
-	public delegate void CustomPortIODelegate(BaseNode node, List< SerializableEdge > edges, NodePort outputPort = null);
+    public delegate void CustomPortIODelegate(BaseNode node, List<SerializableEdge> edges, NodePort outputPort = null);
 
-	public static class CustomPortIO
-	{
-		class PortIOPerField : Dictionary< string, CustomPortIODelegate > {}
-		class PortIOPerNode : Dictionary< Type, PortIOPerField > {}
+    public static class CustomPortIO
+    {
+        class PortIOPerField : Dictionary<string, CustomPortIODelegate> { }
+        class PortIOPerNode : Dictionary<Type, PortIOPerField> { }
 
-		static Dictionary< Type, List< Type > >	assignableTypes = new Dictionary< Type, List< Type > >();
-		static PortIOPerNode					customIOPortMethods = new PortIOPerNode();
+        static Dictionary<Type, List<Type>> assignableTypes = new Dictionary<Type, List<Type>>();
+        static PortIOPerNode customIOPortMethods = new PortIOPerNode();
 
-		static CustomPortIO()
-		{
-			LoadCustomPortMethods();
-		}
+        static CustomPortIO()
+        {
+            LoadCustomPortMethods();
+            AppDomain.CurrentDomain.AssemblyLoad += (o, e) =>
+            {
+                LoadCustomPortMethods(e.LoadedAssembly);
+            };
+        }
 
-		static void LoadCustomPortMethods()
-		{
-			BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+        static void LoadCustomPortMethods()
+        {
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                LoadCustomPortMethods(assembly);
+            }
+        }
 
-			foreach (var type in AppDomain.CurrentDomain.GetAllTypes())
-			{
-				if (type.IsAbstract || type.ContainsGenericParameters)
-					continue ;
-				if (!(type.IsSubclassOf(typeof(BaseNode))))
-					continue ;
+        static void LoadCustomPortMethods(Assembly assembly)
+        {
+            BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
 
-				var methods = type.GetMethods(bindingFlags);
+            foreach (var type in assembly.GetTypes())
+            {
+                if (type.IsAbstract || type.ContainsGenericParameters)
+                    continue;
+                if (!(type.IsSubclassOf(typeof(BaseNode))))
+                    continue;
 
-				foreach (var method in methods)
-				{
-					var portInputAttr = method.GetCustomAttribute< CustomPortInputAttribute >();
-					var portOutputAttr = method.GetCustomAttribute< CustomPortOutputAttribute >();
+                var methods = type.GetMethods(bindingFlags);
 
-					if (portInputAttr == null && portOutputAttr == null)
-						continue ;
-					
-					var p = method.GetParameters();
-					bool nodePortSignature = false;
+                foreach (var method in methods)
+                {
+                    var portInputAttr = method.GetCustomAttribute<CustomPortInputAttribute>();
+                    var portOutputAttr = method.GetCustomAttribute<CustomPortOutputAttribute>();
 
-					// Check if the function can take a NodePort in optional param
-					if (p.Length == 2 && p[1].ParameterType == typeof(NodePort))
-						nodePortSignature = true;
+                    if (portInputAttr == null && portOutputAttr == null)
+                        continue;
 
-					CustomPortIODelegate deleg;
+                    var p = method.GetParameters();
+                    bool nodePortSignature = false;
+
+                    // Check if the function can take a NodePort in optional param
+                    if (p.Length == 2 && p[1].ParameterType == typeof(NodePort))
+                        nodePortSignature = true;
+                     
+                    CustomPortIODelegate deleg;
 #if ENABLE_IL2CPP
 					// IL2CPP doesn't support expression builders
 					if (nodePortSignature)
@@ -66,73 +78,79 @@ namespace GraphProcessor
 						});
 					}
 #else
-					var p1 = Expression.Parameter(typeof(BaseNode), "node");
-					var p2 = Expression.Parameter(typeof(List< SerializableEdge >), "edges");
-					var p3 = Expression.Parameter(typeof(NodePort), "port");
+                    var p1 = Expression.Parameter(typeof(BaseNode), "node");
+                    var p2 = Expression.Parameter(typeof(List<SerializableEdge>), "edges");
+                    var p3 = Expression.Parameter(typeof(NodePort), "port");
 
-					MethodCallExpression ex;
-					if (nodePortSignature)
-						ex = Expression.Call(Expression.Convert(p1, type), method, p2, p3);
-					else
-						ex = Expression.Call(Expression.Convert(p1, type), method, p2);
+                    MethodCallExpression ex;
+                    if (nodePortSignature)
+                        ex = Expression.Call(Expression.Convert(p1, type), method, p2, p3);
+                    else
+                        ex = Expression.Call(Expression.Convert(p1, type), method, p2);
 
-					deleg = Expression.Lambda< CustomPortIODelegate >(ex, p1, p2, p3).Compile();
+                    deleg = Expression.Lambda<CustomPortIODelegate>(ex, p1, p2, p3).Compile();
 #endif
 
-					if (deleg == null)
-					{
-						Debug.LogWarning("Can't use custom IO port function " + method + ": The method have to respect this format: " + typeof(CustomPortIODelegate));
-						continue ;
-					}
+                    if (deleg == null)
+                    {
+                        Debug.LogWarning("Can't use custom IO port function " + method + ": The method have to respect this format: " + typeof(CustomPortIODelegate));
+                        continue;
+                    }
 
-					string fieldName = (portInputAttr == null) ? portOutputAttr.fieldName : portInputAttr.fieldName;
-					Type customType = (portInputAttr == null) ? portOutputAttr.outputType : portInputAttr.inputType;
-					Type fieldType = type.GetField(fieldName, bindingFlags).FieldType;
+                    string fieldName = (portInputAttr == null) ? portOutputAttr.fieldName : portInputAttr.fieldName;
+                    Type customType = (portInputAttr == null) ? portOutputAttr.outputType : portInputAttr.inputType;
+                    Type fieldType = type.GetField(fieldName, bindingFlags).FieldType;
 
-					AddCustomIOMethod(type, fieldName, deleg);
+                    if (type.Name == "MyTestNode")
+                    {
+                        Debug.Log("--- " + method + ", " + fieldName);
 
-					AddAssignableTypes(customType, fieldType);
-					AddAssignableTypes(fieldType, customType);
-				}
-			}
-		}
+                    }
 
-		public static CustomPortIODelegate GetCustomPortMethod(Type nodeType, string fieldName)
-		{
-			PortIOPerField			portIOPerField;
-			CustomPortIODelegate	deleg;
+                    AddCustomIOMethod(type, fieldName, deleg);
 
-			customIOPortMethods.TryGetValue(nodeType, out portIOPerField);
+                    AddAssignableTypes(customType, fieldType);
+                    AddAssignableTypes(fieldType, customType);
+                }
+            }
+        }
 
-			if (portIOPerField == null)
-				return null;
+        public static CustomPortIODelegate GetCustomPortMethod(Type nodeType, string fieldName)
+        {
+            PortIOPerField portIOPerField;
+            CustomPortIODelegate deleg;
 
-			portIOPerField.TryGetValue(fieldName, out deleg);
+            customIOPortMethods.TryGetValue(nodeType, out portIOPerField);
 
-			return deleg;
-		}
+            if (portIOPerField == null)
+                return null;
 
-		static void AddCustomIOMethod(Type nodeType, string fieldName, CustomPortIODelegate deleg)
-		{
-			if (!customIOPortMethods.ContainsKey(nodeType))
-				customIOPortMethods[nodeType] = new PortIOPerField();
+            portIOPerField.TryGetValue(fieldName, out deleg);
 
-			customIOPortMethods[nodeType][fieldName] = deleg;
-		}
+            return deleg;
+        }
 
-		static void AddAssignableTypes(Type fromType, Type toType)
-		{
-			if (!assignableTypes.ContainsKey(fromType))
-				assignableTypes[fromType] = new List< Type >();
+        static void AddCustomIOMethod(Type nodeType, string fieldName, CustomPortIODelegate deleg)
+        {
+            if (!customIOPortMethods.ContainsKey(nodeType))
+                customIOPortMethods[nodeType] = new PortIOPerField();
 
-			assignableTypes[fromType].Add(toType);
-		}
+            customIOPortMethods[nodeType][fieldName] = deleg;
+        }
 
-		public static bool IsAssignable(Type input, Type output)
-		{
-			if (assignableTypes.ContainsKey(input))
-				return assignableTypes[input].Contains(output);
-			return false;
-		}
-	}
+        static void AddAssignableTypes(Type fromType, Type toType)
+        {
+            if (!assignableTypes.ContainsKey(fromType))
+                assignableTypes[fromType] = new List<Type>();
+
+            assignableTypes[fromType].Add(toType);
+        }
+
+        public static bool IsAssignable(Type input, Type output)
+        {
+            if (assignableTypes.ContainsKey(input))
+                return assignableTypes[input].Contains(output);
+            return false;
+        }
+    }
 }
