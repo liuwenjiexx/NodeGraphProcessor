@@ -102,7 +102,7 @@ namespace GraphProcessor
 
 			if (graphView != null)
 			{
-				rootView.Remove(graphView);
+				graphView.parent.Remove(graphView);
 				graphView = null;
 			}
 			//Initialize will provide the BaseGraphView
