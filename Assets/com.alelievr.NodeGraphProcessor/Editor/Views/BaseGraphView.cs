@@ -658,7 +658,7 @@ namespace GraphProcessor
 			}
 		}
 
-		void DragUpdatedCallback(DragUpdatedEvent e)
+		protected virtual void DragUpdatedCallback(DragUpdatedEvent e)
         {
             var dragData = DragAndDrop.GetGenericData("DragSelection") as List<ISelectable>;
 			var dragObjects = DragAndDrop.objectReferences;
@@ -851,7 +851,10 @@ namespace GraphProcessor
 		void InitializeEdgeViews()
 		{
 			// Sanitize edges in case a node broke something while loading
-			graph.edges.RemoveAll(edge => edge == null || edge.inputNode == null || edge.outputNode == null);
+			if( graph.edges.RemoveAll(edge => edge == null || edge.inputNode == null || edge.outputNode == null) > 0)
+            {
+				Debug.LogWarning("Graph remove edges");
+            }
 
 			foreach (var serializedEdge in graph.edges)
 			{

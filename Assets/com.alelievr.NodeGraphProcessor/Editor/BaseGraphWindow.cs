@@ -148,10 +148,20 @@ namespace GraphProcessor
 		public virtual void OnGraphDeleted()
 		{
 			if (graph != null && graphView != null)
-				rootView.Remove(graphView);
+				graphView.parent.Remove(graphView);
 
 			graphView = null;
 		}
+
+		public void CloseGraph()
+        {
+            if (graph)
+            {
+				graphUnloaded?.Invoke(graph);
+				OnGraphDeleted();
+				graph = null;
+            }
+        }
 
 		protected abstract void	InitializeWindow(BaseGraph graph);
 		protected virtual void InitializeGraphView(BaseGraphView view) {}

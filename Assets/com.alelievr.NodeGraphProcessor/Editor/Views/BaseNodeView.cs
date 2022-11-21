@@ -869,6 +869,7 @@ namespace GraphProcessor
 				EnableSyncSelectionBorderHeight();
 
 			element.RegisterValueChangeCallback(e => {
+				//Debug.Log("chagne Field: " + field+" ,value: "+ field.GetValue(nodeTarget));
 				UpdateFieldVisibility(field.Name, field.GetValue(nodeTarget));
 				valueChangedCallback?.Invoke();
 				NotifyNodeChanged();

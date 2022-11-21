@@ -46,10 +46,26 @@ namespace GraphProcessor
 
         static void LoadAllAdapters()
         {
-            foreach (Type type in AppDomain.CurrentDomain.GetAllTypes())
+
+            List<Type> adapterTypes = new List<Type>();
+#if UNITY_EDITOR
+            foreach (var type in UnityEditor.TypeCache.GetTypesDerivedFrom<ITypeAdapter>())
+            {
+                adapterTypes.Add(type);
+            }
+#else
+
+            foreach (Type type in AppDomainExtension.GetAllTypes(AppDomainExtension.ReferencedAssemblies(typeof(ITypeAdapter).Assembly)))
             {
                 if (typeof(ITypeAdapter).IsAssignableFrom(type))
                 {
+                    adapterTypes.Add(type);
+                }
+            }
+#endif
+
+            foreach (Type type in adapterTypes)
+            {
                     if (type.IsAbstract)
                         continue;
                     
@@ -100,7 +116,6 @@ namespace GraphProcessor
                             Debug.LogError($"Failed to load the type convertion method: {method}\n{e}");
                         }
                     }
-                }
             }
 
             // Ensure that the dictionary contains all the convertions in both ways

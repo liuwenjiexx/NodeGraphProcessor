@@ -141,7 +141,9 @@ namespace GraphProcessor
 		[NonSerialized]
 		protected BaseGraph			graph;
 
-		internal class NodeFieldInformation
+        public BaseGraph Graph => graph;
+
+        internal class NodeFieldInformation
 		{
 			public string						name;
 			public string						fieldName;
