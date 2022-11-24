@@ -112,11 +112,18 @@ namespace GraphProcessor
 			});
 
 			Initialize(graphView);
+            if (!pinnedElement.inital)
+                pinnedElement.inital = true;
 		}
+
+        protected virtual Vector2 GetDefaultSize()
+        {
+            return PinnedElement.defaultSize;
+        }
 
 		public void ResetPosition()
 		{
-			pinnedElement.position = new Rect(Vector2.zero, PinnedElement.defaultSize);
+			pinnedElement.position = new Rect(Vector2.zero, GetDefaultSize());
 			SetPosition(pinnedElement.position);
 		}
 

@@ -16,6 +16,8 @@ namespace GraphProcessor
 		public bool				opened = true;
 		public SerializableType	editorType;
 
+		public bool inital;
+
 		public PinnedElement(Type editorType)
 		{
 			this.editorType = new SerializableType(editorType);
