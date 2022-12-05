@@ -1176,7 +1176,7 @@ namespace GraphProcessor
 		/// <summary>
 		/// Send an event to the graph telling that the content of this node have changed
 		/// </summary>
-		public void NotifyNodeChanged() => owner.graph.NotifyNodeChanged(nodeTarget);
+		public virtual void NotifyNodeChanged() => owner.graph.NotifyNodeChanged(nodeTarget);
 
 		#endregion
     }
