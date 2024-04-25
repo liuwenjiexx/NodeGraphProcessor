@@ -3,6 +3,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Linq.Expressions;
+using System.Linq;
 
 namespace GraphProcessor
 {
@@ -21,27 +22,24 @@ namespace GraphProcessor
             LoadCustomPortMethods();
             AppDomain.CurrentDomain.AssemblyLoad += (o, e) =>
             {
-                LoadCustomPortMethods(e.LoadedAssembly);
+                LoadCustomPortMethods(e.LoadedAssembly.GetTypes()
+                    .Where(o => typeof(BaseNode).IsAssignableFrom(o))
+                    .ToArray());
             };
         }
 
         static void LoadCustomPortMethods()
         {
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                LoadCustomPortMethods(assembly);
-            }
+            LoadCustomPortMethods(AppDomainExtension.GetTypesDerivedFrom<BaseNode>());
         }
 
-        static void LoadCustomPortMethods(Assembly assembly)
+        static void LoadCustomPortMethods(Type[] nodeTypes)
         {
             BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
 
-            foreach (var type in assembly.GetTypes())
+            foreach (var type in nodeTypes)
             {
                 if (type.IsAbstract || type.ContainsGenericParameters)
-                    continue;
-                if (!(type.IsSubclassOf(typeof(BaseNode))))
                     continue;
 
                 var methods = type.GetMethods(bindingFlags);
@@ -60,7 +58,7 @@ namespace GraphProcessor
                     // Check if the function can take a NodePort in optional param
                     if (p.Length == 2 && p[1].ParameterType == typeof(NodePort))
                         nodePortSignature = true;
-                     
+
                     CustomPortIODelegate deleg;
 #if ENABLE_IL2CPP
 					// IL2CPP doesn't support expression builders
@@ -101,11 +99,6 @@ namespace GraphProcessor
                     Type customType = (portInputAttr == null) ? portOutputAttr.outputType : portInputAttr.inputType;
                     Type fieldType = type.GetField(fieldName, bindingFlags).FieldType;
 
-                    if (type.Name == "MyTestNode")
-                    {
-                        Debug.Log("--- " + method + ", " + fieldName);
-
-                    }
 
                     AddCustomIOMethod(type, fieldName, deleg);
 
